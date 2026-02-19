@@ -1,0 +1,12 @@
+[submodule "app"]
+	path = app
+	url = https://github.com/beestarbush/clock-app.git
+[submodule "webapp"]
+	path = webapp
+	url = https://github.com/beestarbush/clock-webapp.git
+[submodule "backend"]
+	path = backend
+	url = https://github.com/beestarbush/clock-backend.git
+[submodule "bsp"]
+	path = bsp
+	url = https://github.com/beestarbush/clock-bsp.git

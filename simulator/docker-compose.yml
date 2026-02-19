@@ -1,0 +1,31 @@
+services:
+  clock-simulator:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: clock-simulator
+    ports:
+      - "5000:5000"  # Rust API & WebSocket
+      - "5173:5173"  # React Dev Server
+    volumes:
+      # Mount the actual source code from the parent directories
+      - ../clock-backend:/app/backend
+      - ../clock-webapp:/app/webapp
+      
+      # Mount the data files from the parent root
+      - ../clock-backend/configuration.json:/app/backend/configuration.json
+      - ../clock-backend/media:/app/backend/media
+      
+      # Persistence for speed:
+      # 1. Anonymous volume for node_modules so the container manages its own deps
+      - /app/webapp/node_modules
+      # 2. Named volume for cargo registry so you don't redownload crates
+      - cargo-cache:/usr/local/cargo/registry
+      # 3. Named volume for target folder so you don't recompile from scratch
+      - rust-target:/app/backend/target
+
+    working_dir: /app
+
+volumes:
+  cargo-cache:
+  rust-target:
