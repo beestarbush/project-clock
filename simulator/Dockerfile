@@ -13,5 +13,5 @@ WORKDIR /app
 # We use a shell script to start both processes
 # 1. Frontend: npm install then run dev
 # 2. Backend: cargo watch (rebuilds on save)
-CMD ["sh", "-c", "cd webapp && npm install && npm run dev -- --host & cd backend && cargo watch -x run"]
+CMD ["sh", "-c", "cd webapp && npm install && npm run dev -- --host & cd backend && cargo watch -w src -x run"]
 
