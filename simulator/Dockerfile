@@ -2,7 +2,7 @@ FROM rust:1.85-bookworm
 
 # Install Node.js, and build dependencies
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
-    apt-get install -y nodejs pkg-config libssl-dev && \
+    apt-get install -y nodejs pkg-config libssl-dev libasound2-dev && \
     rm -rf /var/lib/apt/lists/*
 
 # Install cargo-watch to handle auto-recompilation

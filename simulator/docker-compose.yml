@@ -21,7 +21,19 @@ services:
       - rust-target:/app/backend/target
 
     working_dir: /app
+    networks:
+      - clock-network
 
 volumes:
   cargo-cache:
   rust-target:
+
+networks:
+  clock-network:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: br-clock
+    ipam:
+      config:
+        - subnet: 10.5.0.0/16
+          ip_range: 10.5.0.0/24
