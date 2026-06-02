@@ -1,1 +1,5 @@
-sudo docker compose up --build
+#!/bin/sh
+set -eu
+
+xhost + local:
+sudo env USER_ID="$(id -u)" GROUP_ID="$(id -g)" docker compose up

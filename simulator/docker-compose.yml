@@ -1,32 +1,90 @@
 services:
-  clock-simulator:
-    build: 
-      context: .
-      dockerfile: Dockerfile
-    container_name: clock-simulator
-    ports:
-      - "5000:5000"  # Rust API & WebSocket
-      - "5173:5173"  # React Dev Server
+  app:
+    image: qtbuilder
+    build:
+      context: ..
+      dockerfile: docker-files/qtbuilder/Dockerfile
+      args:
+        USER_ID: ${USER_ID:-1000}
+        GROUP_ID: ${GROUP_ID:-1000}
+    container_name: clock-simulator-app
+    depends_on:
+      - backend
+    command:
+      - sh
+      - -c
+      - |
+        ./build.sh &&
+        mkdir -p /workdir/build/bee &&
+        CONF=/workdir/build/bee/clock-app.conf &&
+        touch "$$CONF" &&
+        awk '
+          BEGIN { skip = 0 }
+          /^\[(websocket-api|rest-api)\]$/ { skip = 1; next }
+          skip && /^\[/ { skip = 0 }
+          !skip { print }
+        ' "$$CONF" > "$$CONF.tmp" &&
+        mv "$$CONF.tmp" "$$CONF" &&
+        printf '%s\n' \
+          '' \
+          '[websocket-api]' \
+          'url=ws://backend:5000/ws' \
+          '' \
+          '[rest-api]' \
+          'url=http://backend:5000' \
+          >> "$$CONF" &&
+        ./run.sh
+    environment:
+      - DISPLAY=${DISPLAY}
+      - QT_X11_NO_MITSHM=1
+      - LIBGL_ALWAYS_SOFTWARE=1
+      - QT_QUICK_BACKEND=software
     volumes:
-      # Mount the actual source code from the parent directories
-      - ../backend:/app/backend
+      - ../app/src:/workdir
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    networks:
+      - clock-network
+
+  backend:
+    image: qtbuilder
+    build:
+      context: ..
+      dockerfile: docker-files/qtbuilder/Dockerfile
+      args:
+        USER_ID: ${USER_ID:-1000}
+        GROUP_ID: ${GROUP_ID:-1000}
+    container_name: clock-simulator-backend
+    command: ["sh", "-c", "./build.sh && ./run.sh"]
+    environment:
+      - DISPLAY=${DISPLAY}
+    ports:
+      - "5000:5000"
+    volumes:
+      - ../backend/src:/workdir
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    working_dir: /workdir
+    networks:
+      - clock-network
+
+  webapp:
+    image: webbuilder
+    build:
+      context: ..
+      dockerfile: docker-files/webbuilder/Dockerfile
+    container_name: clock-simulator-webapp
+    depends_on:
+      - backend
+    ports:
+      - "5173:5173"
+    volumes:
       - ../webapp:/app/webapp
-
-      # Persistence for speed:
-      # 1. Anonymous volume for node_modules so the container manages its own deps
-      - /app/webapp/node_modules
-      # 2. Named volume for cargo registry so you don't redownload crates
-      - cargo-cache:/usr/local/cargo/registry
-      # 3. Named volume for target folder so you don't recompile from scratch
-      - rust-target:/app/backend/target
-
-    working_dir: /app
+      - webapp-node-modules:/app/webapp/node_modules
+    working_dir: /app/webapp
     networks:
       - clock-network
 
 volumes:
-  cargo-cache:
-  rust-target:
+  webapp-node-modules:
 
 networks:
   clock-network:
