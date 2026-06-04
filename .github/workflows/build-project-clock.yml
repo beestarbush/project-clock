@@ -1,0 +1,94 @@
+name: Build Project Clock
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+    tags:
+      - "*"
+
+jobs:
+  docker-images:
+    name: Build Docker Images
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Build docker images
+        run: ./docker-files/build-containers.sh
+
+  app-build:
+    name: Build App
+    runs-on: self-hosted
+    needs: docker-images
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Build app
+        run: ./app/build-app.sh
+
+      - name: Upload app artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: clock-app-${{ github.ref_name }}
+          path: app/src/build/clock-app
+
+  backend-build:
+    name: Build Backend
+    runs-on: self-hosted
+    needs: docker-images
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Build backend
+        run: ./backend/build.sh
+
+      - name: Upload backend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: clock-backend-${{ github.ref_name }}
+          path: backend/src/build/clock-app
+
+  bsp-build:
+    name: Build BSP
+    runs-on: self-hosted
+    needs:
+      - docker-images
+      - app-build
+      - backend-build
+    timeout-minutes: 180
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Build BSP product
+        run: ./bsp/build-product.sh
+
+      - name: Upload BSP install image
+        uses: actions/upload-artifact@v4
+        with:
+          name: bee-image-${{ github.ref_name }}
+          path: bsp/workdir/build/tmp/deploy/images/raspberrypi5/bee-image-raspberrypi5.rootfs.wic.bz2
+
+      - name: Upload BSP RAUC bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: bee-rauc-bundle-${{ github.ref_name }}
+          path: bsp/workdir/build/tmp/deploy/images/raspberrypi5/bee-rauc-bundle-raspberrypi5.raucb
