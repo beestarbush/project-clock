@@ -2,4 +2,4 @@
 set -eu
 
 xhost + local:
-sudo env USER_ID="$(id -u)" GROUP_ID="$(id -g)" docker compose up
+env USER_ID="$(id -u)" GROUP_ID="$(id -g)" docker compose up
